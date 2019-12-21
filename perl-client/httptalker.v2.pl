@@ -6,6 +6,13 @@
 use strict;
 use Socket;
 
+### PARSE ARGS ####################
+
+my $method;
+my $host;
+my $port;
+
+# show usage if args are invalid
 if ($#ARGV < 1) {
   print "httptalker -- simple HTTP client\n";
   print "USAGE: httptalker -METHOD URL [PROXY]\n";
@@ -13,9 +20,22 @@ if ($#ARGV < 1) {
   exit;
 }
 
-# Make host:port
-my $host = $ARGV[0];
-my $port = getservbyname('http', 'tcp');
+# parse method
+if ($ARGV[0] eq '-GET' || $ARGV[0] eq '-get') {
+  $method = 'GET';
+} elsif ($ARGV[0] eq '-HEAD' || $ARGV[0] eq '-head') {
+  $method = 'HEAD';
+} else {
+  print "httptalker -- simple HTTP client\n";
+  print "USAGE: httptalker -METHOD URL [PROXY]\n";
+  print "       -METHOD: Get/Head\n";
+  exit;
+}
+
+$host = $ARGV[1];
+$port = getservbyname('http', 'tcp');
+
+### MAKE REQUEST ####################
 
 my $iaddr = inet_aton($host)
   or die "There is no host named :$host \n";
@@ -34,17 +54,23 @@ select(SOCKET); $|=1; select(STDOUT);
 
 
 # Send request
-print SOCKET "GET /index.html HTTP/1.0\r\n";
-print SOCKET "User-Agent: httptalker/0.10 (HTTP client sample)";
+print SOCKET $method . " /index.html HTTP/1.0\r\n";
+print SOCKET "User-Agent: httptalker/0.10 (HTTP client sample)\r\n";
 print SOCKET "\r\n";
 
 
-# Recieve response
-# Skip header
-while (<SOCKET>) {
-  m/^\r\n$/ and last;
-}
-# Display body
-while (<SOCKET>) {
-  print $_;
+### DISPLAY RESPONSE ####################
+
+if ($method eq 'GET') {
+  while (<SOCKET>) {
+    m/^\r\n$/ and last;
+  }
+  while (<SOCKET>) {
+    print $_;
+  }
+} elsif ($method eq 'HEAD') {
+  while (<SOCKET>) {
+    print $_;
+    m/^\r\n$/ and last;
+  }
 }
