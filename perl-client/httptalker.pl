@@ -6,6 +6,15 @@
 use strict;
 use Socket;
 
+### Util ##########################
+
+sub encode {
+  my $tmp = $_[0];
+  $tmp =~ s/([^\.\*\-\_a-zA-Z0-9 ])/sprintf("%%%02lX",unpack("C",$1))/eg;
+  $tmp =~ s/ /+/g;
+  return $tmp;
+}
+
 ### PARSE ARGS ####################
 
 my $method;
@@ -37,10 +46,10 @@ if ($ARGV[0] eq '-GET' || $ARGV[0] eq '-get') {
 
 # URL
 if ($ARGV[1] =~ m|^http://([-_.a-zA-Z0-9]+)/?(.*)$| ) {
-  $host = $1;
-  $path = $2;
-  if ($path =~ m|\?([-_a-zA-Z=&]+)$|) {
-    $params = $1;
+  $host = &encode($1);
+  $path = &encode($2);
+  if ($path =~ m|\?([-_a-zA-Z0-9=&]+)$|) {
+    $params = &encode($1);
   }
 } else {
   print "Invalid URL.\n";
@@ -50,8 +59,8 @@ if ($ARGV[1] =~ m|^http://([-_.a-zA-Z0-9]+)/?(.*)$| ) {
 if ($#ARGV == 2) {
 # Proxy
   if ($ARGV[2] =~ m|^([-_/.a-zA-Z0-9]+):(\d+)$| ) {
-    $proxy = $1;
-    $port = $2;
+    $proxy = &encode($1);
+    $port = &encode($2);
   } else {
     print "Invalid proxy.\n";
   }

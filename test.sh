@@ -21,6 +21,8 @@ try() {
   fi
 }
 
-try 0 -GET http://www.google.com/search?g=a
 try 0 -GET http://www.google.com
 try 0 -HEAD http://www.google.com
+try 0 -GET http://www.google.com/search?g=a
+try 0 -POST http://www.google.com/search?g=a
+try 0 -GET http://www.google.com/search?g=ゆにこーど
