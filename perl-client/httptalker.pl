@@ -12,6 +12,7 @@ my $method;
 my $connect_host;
 my $host;
 my $path;
+my $params = '';
 my $port;
 my $proxy = '';
 
@@ -19,7 +20,7 @@ if ($#ARGV < 1) {
   print "httptalker -- simple HTTP client\n";
   print "USAGE: httptalker -METHOD URL [PROXY]\n";
   print "       -METHOD: Get/Head\n";
-  exit;
+  exit 1;
 }
 
 # method
@@ -27,16 +28,23 @@ if ($ARGV[0] eq '-GET' || $ARGV[0] eq '-get') {
   $method = 'GET';
 } elsif ($ARGV[0] eq '-HEAD' || $ARGV[0] eq '-head') {
   $method = 'HEAD';
+} elsif ($ARGV[0] eq '-POST' || $ARGV[0] eq '-post') {
+  $method = 'POST';
 } else {
   print "Invalid args.\n";
+  exit 1;
 }
 
 # URL
-if ($ARGV[1] =~ m|^http://([-_/.a-zA-Z0-9]+)/?(.*)$| ) {
+if ($ARGV[1] =~ m|^http://([-_.a-zA-Z0-9]+)/?(.*)$| ) {
   $host = $1;
   $path = $2;
+  if ($path =~ m|\?([-_a-zA-Z=&]+)$|) {
+    $params = $1;
+  }
 } else {
   print "Invalid URL.\n";
+  exit 1;
 }
 
 if ($#ARGV == 2) {
@@ -50,7 +58,7 @@ if ($#ARGV == 2) {
   $connect_host = $proxy;
 } else {
   $connect_host = $host;
-   $port = getservbyname('http', 'tcp');
+  $port = getservbyname('http', 'tcp');
 }
 
 ### CONNECTION  ####################
@@ -74,16 +82,33 @@ select(SOCKET); $|=1; select(STDOUT);
 
 ### send REQUEST  ####################
 
-if ($proxy eq '') {
-  print SOCKET "$method http://$host/$path HTTP/1.0\r\n";
-}
-else {
-  print SOCKET "$method /$path HTTP/1.0\r\n";
-}
+if ($method eq 'GET' || $method eq 'HEAD') {
 
-print SOCKET "Host: $host\r\n";
-print SOCKET "User-Agent: httptalker/0.10 (HTTP client sample)\r\n";
-print SOCKET "\r\n";
+  if ($proxy eq '') {
+    print SOCKET "$method /$path?$params HTTP/1.0\r\n";
+  }
+  else {
+    print SOCKET "$method http://$host/$path?$params HTTP/1.0\r\n";
+  }
+  print SOCKET "Host: $host\r\n";
+  print SOCKET "User-Agent: httptalker/0.10 (HTTP client sample)\r\n";
+  print SOCKET "\r\n";
+
+} elsif ($method eq 'POST') {
+
+  if ($proxy eq '') {
+    print SOCKET "$method /$path HTTP/1.0\r\n";
+  }
+  else {
+    print SOCKET "$method http://$host/$path HTTP/1.0\r\n";
+  }
+  my $paramlen = length($params);
+  print SOCKET "Host: $host\r\n";
+  print SOCKET "User-Agent: httptalker/0.10 (HTTP client sample)\r\n";
+  print SOCKET "Content-Length: $paramlen\r\n";
+  print SOCKET "\r\n";
+  print SOCKET "$params\r\n";
+}
 
 
 ### receive RESPONSE ####################
@@ -99,5 +124,9 @@ if ($method eq "GET") {
   while (<SOCKET>) {
     print $_;
     m/^\r\n$/ and last;
+  }
+} elsif ($method eq "POST") {
+  while (<SOCKET>) {
+    print $_;
   }
 }
