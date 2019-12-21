@@ -6,6 +6,13 @@
 use strict;
 use Socket;
 
+if ($#ARGV < 1) {
+  print "httptalker -- simple HTTP client\n";
+  print "USAGE: httptalker -METHOD URL [PROXY]\n";
+  print "       -METHOD: Get/Head\n";
+  exit;
+}
+
 # Make host:port
 my $host = $ARGV[0];
 my $port = getservbyname('http', 'tcp');
