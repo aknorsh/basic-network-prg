@@ -28,6 +28,7 @@ select(SOCKET); $|=1; select(STDOUT);
 
 # Send request
 print SOCKET "GET /index.html HTTP/1.0\r\n";
+print SOCKET "User-Agent: httptalker/0.10 (HTTP client sample)";
 print SOCKET "\r\n";
 
 
