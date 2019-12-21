@@ -6,6 +6,15 @@
 use strict;
 use Socket;
 
+### Util ####################
+
+sub showUsage {
+  print "httptalker -- simple HTTP client\n";
+  print "USAGE: httptalker -METHOD URL [PROXY]\n";
+  print "       -METHOD: Get/Head\n";
+  exit;
+}
+
 ### PARSE ARGS ####################
 
 my $method;
@@ -14,10 +23,7 @@ my $port;
 
 # show usage if args are invalid
 if ($#ARGV < 1) {
-  print "httptalker -- simple HTTP client\n";
-  print "USAGE: httptalker -METHOD URL [PROXY]\n";
-  print "       -METHOD: Get/Head\n";
-  exit;
+  &showUsage();
 }
 
 # parse method
@@ -26,10 +32,7 @@ if ($ARGV[0] eq '-GET' || $ARGV[0] eq '-get') {
 } elsif ($ARGV[0] eq '-HEAD' || $ARGV[0] eq '-head') {
   $method = 'HEAD';
 } else {
-  print "httptalker -- simple HTTP client\n";
-  print "USAGE: httptalker -METHOD URL [PROXY]\n";
-  print "       -METHOD: Get/Head\n";
-  exit;
+  &showUsage();
 }
 
 $host = $ARGV[1];
