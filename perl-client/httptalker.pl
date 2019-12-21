@@ -81,6 +81,7 @@ else {
   print SOCKET "$method /$path HTTP/1.0\r\n";
 }
 
+print SOCKET "Host: $host\r\n";
 print SOCKET "User-Agent: httptalker/0.10 (HTTP client sample)\r\n";
 print SOCKET "\r\n";
 
