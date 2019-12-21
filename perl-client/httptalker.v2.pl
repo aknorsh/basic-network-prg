@@ -6,72 +6,95 @@
 use strict;
 use Socket;
 
-### Util ####################
+### PARSE ARGS ####################
 
-sub showUsage {
+my $method;
+my $connect_host;
+my $host;
+my $path;
+my $port;
+my $proxy = '';
+
+if ($#ARGV < 1) {
   print "httptalker -- simple HTTP client\n";
   print "USAGE: httptalker -METHOD URL [PROXY]\n";
   print "       -METHOD: Get/Head\n";
   exit;
 }
 
-### PARSE ARGS ####################
-
-my $method;
-my $host;
-my $port;
-
-# show usage if args are invalid
-if ($#ARGV < 1) {
-  &showUsage();
-}
-
-# parse method
+# method
 if ($ARGV[0] eq '-GET' || $ARGV[0] eq '-get') {
   $method = 'GET';
 } elsif ($ARGV[0] eq '-HEAD' || $ARGV[0] eq '-head') {
   $method = 'HEAD';
 } else {
-  &showUsage();
+  print "Invalid args.\n";
 }
 
-$host = $ARGV[1];
-$port = getservbyname('http', 'tcp');
+# URL
+if ($ARGV[1] =~ m|^http://([-_/.a-zA-Z0-9]+)/?(.*)$| ) {
+  $host = $1;
+  $path = $2;
+} else {
+  print "Invalid URL.\n";
+}
 
-### MAKE REQUEST ####################
+if ($#ARGV == 2) {
+# Proxy
+  if ($ARGV[2] =~ m|^([-_/.a-zA-Z0-9]+):(\d+)$| ) {
+    $proxy = $1;
+    $port = $2;
+  } else {
+    print "Invalid proxy.\n";
+  }
+  $connect_host = $proxy;
+} else {
+  $connect_host = $host;
+   $port = getservbyname('http', 'tcp');
+}
 
-my $iaddr = inet_aton($host)
-  or die "There is no host named :$host \n";
+### CONNECTION  ####################
+
+# Get ip
+my $iaddr = inet_aton($connect_host)
+  or die "There is no host named '$connect_host'\n";
 
 # Make Socket
 my $sock_addr = pack_sockaddr_in($port, $iaddr);
+
 socket(SOCKET, PF_INET, SOCK_STREAM, 0)
   or die "Cannot create socket.\n";
 
-
-# Connect
 connect(SOCKET, $sock_addr)
-  or die "Cannot connect to $host : $port.\n";
+  or die "Cannot connect to $connect_host:$port.\n";
+
 # Disable buffering
 select(SOCKET); $|=1; select(STDOUT);
 
 
-# Send request
-print SOCKET $method . " /index.html HTTP/1.0\r\n";
+### send REQUEST  ####################
+
+if ($proxy eq '') {
+  print SOCKET "$method http://$host/$path HTTP/1.0\r\n";
+}
+else {
+  print SOCKET "$method /$path HTTP/1.0\r\n";
+}
+
 print SOCKET "User-Agent: httptalker/0.10 (HTTP client sample)\r\n";
 print SOCKET "\r\n";
 
 
-### DISPLAY RESPONSE ####################
+### receive RESPONSE ####################
 
-if ($method eq 'GET') {
+if ($method eq "GET") {
   while (<SOCKET>) {
     m/^\r\n$/ and last;
   }
   while (<SOCKET>) {
     print $_;
   }
-} elsif ($method eq 'HEAD') {
+} elsif ($method eq "HEAD") {
   while (<SOCKET>) {
     print $_;
     m/^\r\n$/ and last;
